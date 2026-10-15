@@ -1,50 +1,79 @@
-# DocuMind — Document AI Assistant (Frontend starter)
+# DocuMind — Document AI Assistant
 
-Frontend-first prototype for a document question-answering app. Built with Next.js, React, TypeScript, and CSS.
+Frontend scaffold for a document question-answering application. Built with Next.js, React, TypeScript, and CSS.
 
 ## Current status
 
-This is **UI-only scaffolding**. Uploading a file currently updates local UI state; it does not upload file bytes, run OCR, create embeddings, retrieve chunks, or call an LLM. Chat responses and citations are explicitly simulated.
+This repository is currently a **frontend-only UI prototype**. The UI is organized into feature-based React components. Document selection and chat interactions still run in local demo mode.
+
+- Selecting a file adds its metadata to local React state only.
+- Files are **not uploaded to a server**, OCR is not run, and chunks/embeddings are not created.
+- Chat submission does **not** call an LLM or run retrieval. The UI explicitly shows a demo-mode notice instead of fabricating an answer or citation.
+- Sample document rows are illustrative and are not indexed data.
+- `lib/api.ts` defines the future FastAPI client functions but they are not wired into the UI yet.
 
 ## Requirements
 
-- Node.js 20.9+ (recommended)
+- Node.js 20.9+ (Node.js 22 LTS is suitable)
 - npm
 
 ## Run locally
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-## Supported file types in the UI
+## Available scripts
 
-- PDF
-- PNG
-- JPG / JPEG
+```bash
+npm run dev       # Next.js development server
+npm run lint      # ESLint
+npm run typecheck # TypeScript type checking
+npm run build     # Production build
+```
 
-The 20 MB limit is currently presentation copy only; add actual client-side and server-side validation when wiring the API.
+## Frontend structure
 
-## Next integration steps
+```text
+app/
+  layout.tsx
+  page.tsx                 # Compose the page and connect hooks/components
+  globals.css
+components/
+  layout/                   # Sidebar, Topbar
+  chat/                     # MessageList, MessageBubble, ChatComposer, SuggestedQuestions
+  documents/                # DocumentList, DocumentItem, UploadDropzone
+  sources/                  # KnowledgeSourcesPanel, CitationCard
+hooks/
+  useDocuments.ts           # Local document UI state and client-side validation
+  useChat.ts                # Local chat state; demo-only response
+lib/
+  api.ts                    # Typed fetch wrapper and future FastAPI functions
 
-1. Create the FastAPI backend.
-2. Add `POST /api/v1/documents` for multipart upload.
-3. Add `GET /api/v1/documents` for the user's document list and processing status.
-4. Add `POST /api/v1/chat` accepting `{ question, document_ids }`.
-5. Return answer text plus citations such as `{ document_id, filename, page_number, chunk_id, excerpt }`.
-6. Replace local mock handlers in `app/page.tsx` with API calls using `NEXT_PUBLIC_API_BASE_URL`.
-7. Add loading, retry, empty, and error states.
+types/
+  index.ts                  # Shared UI and API contracts
+```
 
-## Suggested API contract
+## Frontend environment
+
+`.env.example` includes:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+This variable only sets the base URL for the typed API client; the UI is not connected to that API yet. Do not put model-provider API keys in `NEXT_PUBLIC_*` variables because they are exposed to the browser.
+
+## API contract prepared for the backend
 
 ### `POST /api/v1/documents`
 
-`multipart/form-data`, field `file`
+`multipart/form-data`, field `file`. Expected response:
 
-Response:
 ```json
 {
   "id": "doc_123",
@@ -56,7 +85,6 @@ Response:
 
 ### `GET /api/v1/documents`
 
-Response:
 ```json
 {
   "items": [
@@ -70,9 +98,18 @@ Response:
 }
 ```
 
+### `GET /api/v1/documents/{id}`
+
+Returns the document and its current processing status.
+
+### `DELETE /api/v1/documents/{id}`
+
+Deletes a document and its indexed chunks.
+
 ### `POST /api/v1/chat`
 
 Request:
+
 ```json
 {
   "question": "What is the deadline?",
@@ -81,6 +118,7 @@ Request:
 ```
 
 Response:
+
 ```json
 {
   "answer": "The deadline is ...",
@@ -95,3 +133,9 @@ Response:
   ]
 }
 ```
+
+The backend must be the source of truth for file validation, processing status, retrieval, and citations. Client-side validation is for user feedback only.
+
+## Next milestone
+
+Implement the FastAPI health endpoint and real multipart file upload with server-side validation and local storage. Then implement PDF extraction/OCR and chunk metadata before adding embeddings and RAG retrieval.

@@ -6,3 +6,5 @@ build/
 !.env.example
 npm-debug.log*
 .DS_Store
+
+tsconfig.tsbuildinfo
